@@ -1,41 +1,55 @@
-body {
-  font-family: sans-serif;
-  background: #f0f0f0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  margin: 0;
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Deriv AI Signal Bot</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Deriv AI Signal Bot</h1>
+    <label for="duration">Time Duration:</label>
+    <select id="duration">
+      <option value="60">1 Minute</option>
+      <option value="120">2 Minutes</option>
+      <option value="300">5 Minutes</option>
+    </select>
+    
+    <label for="amount">Amount:</label>
+    <select id="amount">
+      <option value="1">$1</option>
+      <option value="5">$5</option>
+      <option value="10">$10</option>
+    </select>
+    
+    <button id="get-signal">Get Signal</button>
+    
+    <div id="signal-result">
+      <p><strong>Signal:</strong> <span id="signal">Waiting...</span></p>
+      <p><strong>Confidence:</strong> <span id="confidence">0%</span></p>
+      <p><strong>Duration:</strong> <span id="duration-result"></span></p>
+      <p><strong>Stake:</strong> <span id="amount-result"></span></p>
+    </div>
+  </div>
 
-.container {
-  background: white;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.2);
-  text-align: center;
-}
+  <script>
+    document.getElementById("get-signal").addEventListener("click", async () => {
+      const duration = document.getElementById("duration").value;
+      const amount = document.getElementById("amount").value;
 
-.controls {
-  margin-bottom: 20px;
-}
+      const res = await fetch("/api/signal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ duration, amount }),
+      });
 
-label {
-  margin: 0 10px;
-}
-
-button {
-  padding: 10px 20px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-#result {
-  margin-top: 20px;
-  font-size: 18px;
-  font-weight: bold;
-}
+      const data = await res.json();
+      document.getElementById("signal").textContent = data.signal;
+      document.getElementById("confidence").textContent = data.confidence + "%";
+      document.getElementById("duration-result").textContent = duration / 60 + " min";
+      document.getElementById("amount-result").textContent = "$" + amount;
+    });
+  </script>
+</body>
+</html>
