@@ -1,32 +1,71 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Deriv AI Trading Bot</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Binary Trading Bot</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .signal-box { margin-top: 20px; border: 1px solid #ccc; padding: 10px; }
+    button { padding: 10px 20px; margin: 10px 0; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Deriv AI Signal Bot</h1>
-    <div class="controls">
-      <label>Time Duration:
-        <select id="duration">
-          <option value="60">1 Minute</option>
-          <option value="300">5 Minutes</option>
-          <option value="600">10 Minutes</option>
-        </select>
-      </label>
-      <label>Amount:
-        <select id="amount">
-          <option value="1">$1</option>
-          <option value="5">$5</option>
-          <option value="10">$10</option>
-        </select>
-      </label>
-    </div>
-    <button id="getSignal">Get Signal</button>
-    <div id="result"></div>
-  </div>
-  <script src="script.js"></script>
+  <h1>Binary Trading Bot</h1>
+  <label>Symbol:
+    <input id="symbol" value="R_100" />
+  </label>
+  <br/>
+  <label>Duration (seconds):
+    <input id="duration" value="60" />
+  </label>
+  <br/>
+  <label>Amount:
+    <input id="amount" value="1" />
+  </label>
+  <br/>
+  <button onclick="getSignal()">Get Signal</button>
+  <div class="signal-box" id="signalBox"></div>
+  <button onclick="confirmTrade()">Execute Trade</button>
+
+  <script>
+    let currentSignal = null;
+
+    async function getSignal() {
+      const symbol = document.getElementById('symbol').value;
+      const duration = document.getElementById('duration').value;
+      const amount = document.getElementById('amount').value;
+
+      const res = await fetch('/api/signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol, duration, amount })
+      });
+      const data = await res.json();
+      currentSignal = data;
+
+      document.getElementById('signalBox').innerHTML = `
+        <strong>Signal:</strong> ${data.signal}<br/>
+        <strong>Reason:</strong> ${data.reason}<br/>
+        <strong>Confidence:</strong> ${data.confidence}
+      `;
+    }
+
+    async function confirmTrade() {
+      if (!currentSignal) {
+        alert('Get a signal first.');
+        return;
+      }
+
+      const res = await fetch('/api/trade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentSignal)
+      });
+
+      const data = await res.json();
+      alert('Trade Result: ' + JSON.stringify(data));
+    }
+  </script>
 </body>
 </html>
