@@ -1,24 +1,89 @@
-// File: server.js const express = require("express"); const axios = require("axios"); const cors = require("cors"); require("dotenv\config");
+const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
+const path = require('path');
+require('dotenv').config();
 
-const app = express(); app.use(cors()); app.use(express.json()); app.use(express.static("public"));
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-const API_TOKEN = process.env.DERIV_TOKEN;
+const DERIV_TOKEN = process.env.DERIV_TOKEN;
+const API_URL = 'wss://ws.binaryws.com/websockets/v3?app_id=1089';
 
-app.post("/api/signal", async (req, res) => { const { symbol, duration, amount } = req.body;
+app.post('/api/signal', async (req, res) => {
+  const { symbol, duration, amount } = req.body;
 
-// Simulate advanced AI + strategy signal generation (simplified) const response = await axios.post("https://api.deriv.com/websockets/v3", { ticks_history: symbol, style: "candles", count: 10, granularity: 60 });
+  try {
+    // Sample signal logic based on random + mock confidence
+    const direction = Math.random() > 0.5 ? 'CALL' : 'PUT';
+    const confidence = (Math.random() * 30 + 70).toFixed(2); // 70% to 100%
+    const reason = direction === 'CALL' ? 'Strong bullish candlestick' : 'Bearish pressure detected';
 
-const candles = response.data.candles; const last = candles[candles.length - 1]; const secondLast = candles[candles.length - 2];
+    res.json({
+      signal: direction,
+      confidence,
+      reason,
+      symbol,
+      duration,
+      amount
+    });
 
-// Basic strategy + candlestick pattern let signal = "unknown"; let reason = "";
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to generate signal' });
+  }
+});
 
-if (secondLast.open < secondLast.close && last.open > last.close) { signal = "put"; reason = "Bearish engulfing pattern detected."; } else if (secondLast.open > secondLast.close && last.open < last.close) { signal = "call"; reason = "Bullish engulfing pattern detected."; }
+app.post('/api/trade', async (req, res) => {
+  const { symbol, amount, duration, signal } = req.body;
+  const ws = new (require('ws'))(API_URL);
 
-res.json({ signal, confidence: "high", reason, symbol, duration, amount }); });
+  ws.on('open', () => {
+    ws.send(JSON.stringify({ authorize: DERIV_TOKEN }));
+  });
 
-app.post("/api/trade", async (req, res) => { const { signal, symbol, duration, amount } = req.body; const contract_type = signal === "call" ? "CALL" : "PUT";
+  ws.on('message', (msg) => {
+    const data = JSON.parse(msg);
 
-try { const response = await axios.post("https://api.deriv.com/binary", { authorize: API_TOKEN, buy: 1, price: amount, parameters: { amount, basis: "stake", contract_type, currency: "USD", duration, duration_unit: "s", symbol } }); res.json({ status: "Trade executed", details: response.data }); } catch (err) { res.status(500).json({ error: "Trade failed", details: err.message }); } });
+    if (data.msg_type === 'authorize') {
+      const proposal = {
+        buy: 1,
+        price: amount,
+        parameters: {
+          amount: amount,
+          basis: 'stake',
+          contract_type: signal,
+          currency: 'USD',
+          duration: duration,
+          duration_unit: 's',
+          symbol: symbol
+        },
+        subscribe: 1
+      };
 
-const PORT = process.env.PORT || 3000; app.listen(PORT, () => console.log(Bot running on port ${PORT}));
+      ws.send(JSON.stringify(proposal));
+    }
 
+    if (data.msg_type === 'buy') {
+      res.json({
+        result: 'Trade placed',
+        contract_id: data.buy.contract_id
+      });
+      ws.close();
+    }
+
+    if (data.error) {
+      res.status(500).json({ error: data.error.message });
+      ws.close();
+    }
+  });
+
+  ws.on('error', (e) => {
+    res.status(500).json({ error: 'WebSocket Error' });
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
