@@ -1,71 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>Live Binary Signals</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f8f9fa;
-      color: #333;
-      text-align: center;
-      padding: 40px;
-    }
-
-    h1 {
-      color: #1a73e8;
-    }
-
-    #signal-container {
-      margin-top: 30px;
-      background: white;
-      padding: 25px;
-      display: inline-block;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
-    }
-
-    .signal {
-      font-size: 20px;
-      margin-top: 10px;
-    }
-  </style>
+  <title>Deriv AI Trading Bot</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Live Binary Trading Signals</h1>
-  <div id="signal-container">
-    <p>Loading signal...</p>
+  <div class="container">
+    <h1>Deriv AI Signal Bot</h1>
+    <div class="controls">
+      <label>Time Duration:
+        <select id="duration">
+          <option value="60">1 Minute</option>
+          <option value="300">5 Minutes</option>
+          <option value="600">10 Minutes</option>
+        </select>
+      </label>
+      <label>Amount:
+        <select id="amount">
+          <option value="1">$1</option>
+          <option value="5">$5</option>
+          <option value="10">$10</option>
+        </select>
+      </label>
+    </div>
+    <button id="getSignal">Get Signal</button>
+    <div id="result"></div>
   </div>
-  <script>
-    async function fetchSignal() {
-      try {
-        const res = await fetch('/signals');
-        const data = await res.json();
-
-        const container = document.getElementById('signal-container');
-        container.innerHTML = '';
-
-        if (data.length === 0) {
-          container.innerHTML = '<p>No signals received yet.</p>';
-        } else {
-          const signal = data[0];
-          const div = document.createElement('div');
-          div.className = 'signal';
-          div.innerHTML = `
-            <strong>Asset:</strong> ${signal.asset}<br>
-            <strong>Direction:</strong> ${signal.direction}<br>
-            <strong>Time:</strong> ${signal.time}
-          `;
-          container.appendChild(div);
-        }
-      } catch (err) {
-        console.error('Error fetching signal:', err);
-        document.getElementById('signal-container').innerHTML = '<p>Error fetching data.</p>';
-      }
-    }
-
-    fetchSignal();
-    setInterval(fetchSignal, 30000);
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
