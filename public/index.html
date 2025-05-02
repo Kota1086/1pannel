@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,11 +8,16 @@
   <style>
     body { font-family: sans-serif; padding: 20px; }
     .signal-box { margin-top: 20px; border: 1px solid #ccc; padding: 10px; }
-    button { padding: 10px 20px; margin: 10px 0; }
+    button { padding: 10px 20px; margin: 10px 0; cursor: pointer; }
+    .loading { display: none; color: blue; }
+    .progress-bar { width: 100%; background: #ddd; height: 20px; }
+    .progress { height: 100%; background: green; transition: width 0.3s; }
+    #chartContainer { width: 100%; max-height: 300px; margin-top: 20px; }
   </style>
 </head>
 <body>
   <h1>Binary Trading Bot</h1>
+
   <label>Symbol:
     <input id="symbol" value="R_100" />
   </label>
@@ -24,48 +30,100 @@
     <input id="amount" value="1" />
   </label>
   <br/>
-  <button onclick="getSignal()">Get Signal</button>
+  <button id="getSignal">Get Signal</button>
+  <div id="loading" class="loading">Loading signal...</div>
   <div class="signal-box" id="signalBox"></div>
+  <div>AI Confidence: <div class="progress-bar"><div id="confidenceBar" class="progress"></div></div></div>
+  <div id="chartContainer"><canvas id="candlestickChart"></canvas></div>
   <button onclick="confirmTrade()">Execute Trade</button>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.2.0/dist/chartjs-chart-financial.min.js"></script>
   <script>
     let currentSignal = null;
+    let chart = null;
 
-    async function getSignal() {
-      const symbol = document.getElementById('symbol').value;
-      const duration = document.getElementById('duration').value;
-      const amount = document.getElementById('amount').value;
-
-      const res = await fetch('/api/signal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol, duration, amount })
+    function initChart() {
+      const ctx = document.getElementById('candlestickChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'candlestick',
+        data: { datasets: [{ label: 'Candlestick', data: [] }] },
+        options: { responsive: true, maintainAspectRatio: false }
       });
-      const data = await res.json();
-      currentSignal = data;
-
-      document.getElementById('signalBox').innerHTML = `
-        <strong>Signal:</strong> ${data.signal}<br/>
-        <strong>Reason:</strong> ${data.reason}<br/>
-        <strong>Confidence:</strong> ${data.confidence}
-      `;
     }
+
+    async function updateChart(symbol) {
+      try {
+        const res = await fetch(`/api/market-data?symbol=${symbol}`);
+        const data = await res.json();
+        chart.data.datasets[0].data = data.candles;
+        chart.update();
+      } catch (err) {
+        console.error('Error fetching chart data:', err);
+      }
+    }
+
+    document.getElementById("getSignal").addEventListener("click", async () => {
+      const symbol = document.getElementById("symbol").value;
+      const duration = parseInt(document.getElementById("duration").value);
+      const amount = parseFloat(document.getElementById("amount").value);
+      const loading = document.getElementById("loading");
+      const signalBox = document.getElementById("signalBox");
+
+      loading.style.display = "block";
+      signalBox.innerText = "";
+      document.getElementById("confidenceBar").style.width = "0%";
+
+      try {
+        const res = await Promise.race([
+          fetch("/api/signal", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ symbol, duration, amount })
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 2000))
+        ]);
+
+        const data = await res.json();
+        currentSignal = data;
+
+        signalBox.innerHTML =
+          `<strong>Signal:</strong> <span style="color:${data.signal === 'CALL' ? 'green' : 'red'}">${data.signal}</span><br/>
+           <strong>Reason:</strong> ${data.reason}<br/>
+           <strong>Confidence:</strong> ${data.confidence}%<br/>
+           <strong>Duration:</strong> ${duration}s | <strong>Stake:</strong> $${amount}`;
+        
+        document.getElementById("confidenceBar").style.width = `${data.confidence}%`;
+        updateChart(symbol);
+      } catch (err) {
+        signalBox.innerText = "Error fetching signal or timeout.";
+        console.error(err);
+      } finally {
+        loading.style.display = "none";
+      }
+    });
 
     async function confirmTrade() {
       if (!currentSignal) {
-        alert('Get a signal first.');
+        alert("Get a signal first.");
         return;
       }
 
-      const res = await fetch('/api/trade', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/trade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(currentSignal)
       });
 
       const data = await res.json();
-      alert('Trade Result: ' + JSON.stringify(data));
+      alert("Trade Result: " + JSON.stringify(data));
     }
+
+    window.onload = () => {
+      initChart();
+      updateChart(document.getElementById("symbol").value);
+    };
   </script>
 </body>
 </html>
+```
