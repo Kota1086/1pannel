@@ -1,4 +1,3 @@
-
 {
   "name": "binary-bot",
   "version": "1.0.0",
@@ -15,7 +14,6 @@
     "technicalindicators": "^3.1.0",
     "ws": "^8.13.0",
     "@tensorflow/tfjs-node": "^4.10.0",
-    "node-cache": "^5.1.2",
-    "talib": "^1.1.5"
+    "node-cache": "^5.1.2"
   }
 }
