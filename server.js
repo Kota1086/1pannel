@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const WebSocket = require('ws');
-const talib = require('talib');
 const { RSI, MACD, EMA } = require('technicalindicators');
 const tf = require('@tensorflow/tfjs-node');
 const NodeCache = require('node-cache');
@@ -35,14 +34,16 @@ async function fetchMarketData(symbol, timeframe = 60, count = 100) {
       if (data.candles) {
         resolve(data.candles);
         ws.close();
-      }
-      if (data.error) {
+      } else if (data.error) {
         reject(data.error);
         ws.close();
       }
     });
 
-    ws.on('error', reject);
+    ws.on('error', (err) => {
+      ws.close();
+      reject(err);
+    });
   });
 }
 
@@ -67,6 +68,12 @@ function runSignalWorker(symbol, duration, candles) {
 
 if (!isMainThread) {
   const { symbol, duration, candles } = workerData;
+
+  if (candles.length < 20) {
+    parentPort.postMessage({ signal: 'CALL', reason: 'Insufficient candle data', confidence: 50 });
+    return;
+  }
+
   const closePrices = candles.map(c => c.close);
   const openPrices = candles.map(c => c.open);
   const highPrices = candles.map(c => c.high);
@@ -148,7 +155,7 @@ app.post('/api/signal', async (req, res) => {
   try {
     const signalData = await Promise.race([
       generateSmartSignal(symbol, duration),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
     ]);
     res.json(signalData);
   } catch (err) {
@@ -182,12 +189,10 @@ app.post('/api/trade', async (req, res) => {
         subscribe: 1
       };
       ws.send(JSON.stringify(proposal));
-    }
-    if (data.msg_type === 'buy') {
+    } else if (data.msg_type === 'buy') {
       res.json({ result: 'Trade placed', contract_id: data.buy.contract_id });
       ws.close();
-    }
-    if (data.error) {
+    } else if (data.error) {
       res.status(500).json({ error: data.error.message });
       ws.close();
     }
@@ -195,6 +200,7 @@ app.post('/api/trade', async (req, res) => {
 
   ws.on('error', (e) => {
     res.status(500).json({ error: 'WebSocket Error' });
+    ws.close();
   });
 });
 
