@@ -1,78 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Binary Trading Bot</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    .signal-box { margin-top: 20px; border: 1px solid #ccc; padding: 10px; }
-    button { padding: 10px 20px; margin: 10px 0; cursor: pointer; }
-  </style>
+    <title>Deriv Trading Bot</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #signal { margin-top: 20px; padding: 15px; border-radius: 5px; }
+        .bullish { background: #90EE90; }
+        .bearish { background: #FFCCCB; }
+        button { padding: 10px 20px; font-size: 16px; }
+    </style>
 </head>
 <body>
-  <h1>Binary Trading Bot</h1>
+    <button id="toggleBtn">Start Bot</button>
+    <div id="signal"></div>
 
-  <label>Symbol:
-    <input id="symbol" value="R_100" />
-  </label>
-  <br/>
-  <label>Duration (seconds):
-    <input id="duration" value="60" />
-  </label>
-  <br/>
-  <label>Amount:
-    <input id="amount" value="1" />
-  </label>
-  <br/>
-  <button id="getSignal">Get Signal</button>
-  <div class="signal-box" id="signalBox"></div>
-  <button onclick="confirmTrade()">Execute Trade</button>
+    <script>
+        const btn = document.getElementById('toggleBtn');
+        const signalDiv = document.getElementById('signal');
+        let eventSource;
 
-  <script>
-    let currentSignal = null;
-
-    document.getElementById("getSignal").addEventListener("click", async () => {
-      const symbol = document.getElementById("symbol").value;
-      const duration = parseInt(document.getElementById("duration").value);
-      const amount = parseFloat(document.getElementById("amount").value);
-
-      try {
-        const res = await fetch("/api/signal", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ symbol, duration, amount })
+        btn.addEventListener('click', () => {
+            if(eventSource) {
+                eventSource.close();
+                eventSource = null;
+                btn.textContent = 'Start Bot';
+                signalDiv.textContent = '';
+            } else {
+                eventSource = new EventSource('/stream');
+                btn.textContent = 'Stop Bot';
+                
+                eventSource.onmessage = (e) => {
+                    const data = JSON.parse(e.data);
+                    signalDiv.className = data.pattern;
+                    signalDiv.innerHTML = `
+                        <h2>Signal: ${data.recommend}</h2>
+                        <p>Time: ${new Date(data.timestamp).toLocaleTimeString()}</p>
+                    `;
+                };
+            }
         });
-
-        const data = await res.json();
-        currentSignal = data;
-
-        document.getElementById("signalBox").innerHTML =
-          `<strong>Signal:</strong> <span style="color:${data.signal === 'CALL' ? 'green' : 'red'}">${data.signal}</span><br/>
-           <strong>Reason:</strong> ${data.reason}<br/>
-           <strong>Confidence:</strong> ${data.confidence}%<br/>
-           <strong>Duration:</strong> ${duration}s | <strong>Stake:</strong> $${amount}`;
-      } catch (err) {
-        document.getElementById("signalBox").innerText = "Error fetching signal.";
-        console.error(err);
-      }
-    });
-
-    async function confirmTrade() {
-      if (!currentSignal) {
-        alert("Get a signal first.");
-        return;
-      }
-
-      const res = await fetch("/api/trade", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentSignal)
-      });
-
-      const data = await res.json();
-      alert("Trade Result: " + JSON.stringify(data));
-    }
-  </script>
+    </script>
 </body>
 </html>
