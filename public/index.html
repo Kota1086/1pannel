@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Emoji Dot Art Composer</title>
@@ -63,9 +64,7 @@
       box-shadow: inset 0 0 10px #00ff9955;
       max-height: 70vh;
     }
-    canvas {
-      display: none;
-    }
+    canvas { display: none; }
     .footer {
       margin-top: 15px;
       font-size: 12px;
@@ -75,49 +74,48 @@
 </head>
 <body>
   <div class="app-box">
-    <h1>✨ AI-Powered Emoji Dot Art Composer</h1><div class="controls">
-  <input id="emojiInput" value="🥹" maxlength="2" placeholder="Enter Emoji">
-  <select id="modeSelect">
-    <option value="ai-ultra">AI Ultra Detail</option>
-    <option value="ai-smart">AI Smart Fill</option>
-    <option value="ai-edge">AI Sharp Edge</option>
-    <option value="ai-contrast">AI Contrast Enhance</option>
-    <option value="ai-face">AI Face Map</option>
-    <option value="ai-outline">AI Outline</option>
-    <option value="ai-depth">AI Depth</option>
-    <option value="ai-pixel">AI Pixel Clean</option>
-    <option value="ai-hybrid">AI Hybrid FX</option>
-    <option value="ai-simplified">AI Simplified</option>
-  </select>
-  <select id="platformSelect">
-    <option value="default">🌐 Default</option>
-    <option value="whatsapp">🟢 WhatsApp</option>
-    <option value="instagram">📸 Instagram</option>
-    <option value="facebook">🔵 Facebook</option>
-    <option value="tiktok">🎵 TikTok</option>
-  </select>
-</div>
+    <h1>✨ AI-Powered Emoji Dot Art Composer</h1>
+    <div class="controls">
+      <input id="emojiInput" value="🥹" maxlength="2" placeholder="Enter Emoji">
+      <select id="modeSelect">
+        <option value="ai-ultra">AI Ultra Detail</option>
+        <option value="ai-smart">AI Smart Fill</option>
+        <option value="ai-edge">AI Sharp Edge</option>
+        <option value="ai-contrast">AI Contrast Enhance</option>
+        <option value="ai-face">AI Face Map</option>
+        <option value="ai-outline">AI Outline</option>
+        <option value="ai-depth">AI Depth</option>
+        <option value="ai-pixel">AI Pixel Clean</option>
+        <option value="ai-hybrid">AI Hybrid FX</option>
+        <option value="ai-simplified">AI Simplified</option>
+      </select>
+      <select id="platformSelect">
+        <option value="default">🌐 Default</option>
+        <option value="whatsapp">🟢 WhatsApp</option>
+        <option value="instagram">📸 Instagram</option>
+        <option value="facebook">🔵 Facebook</option>
+        <option value="tiktok">🎵 TikTok</option>
+      </select>
+    </div>
+    <div class="controls">
+      <button onclick="generateArt()">🎨 Generate</button>
+      <button onclick="copyToClipboard()">📋 Copy to Clipboard</button>
+    </div>
+    <canvas id="emojiCanvas"></canvas>
+    <div class="output-box" id="dotOutput"></div>
+    <div class="footer">© 2025 Emoji Art Studio | Powered by Simulated AI Logic</div>
+  </div>
 
-<div class="controls">
-  <button onclick="generateArt()">🎨 Generate</button>
-  <button onclick="copyToClipboard()">📋 Copy to Clipboard</button>
-</div>
-
-<canvas id="emojiCanvas"></canvas>
-<div class="output-box" id="dotOutput"></div>
-
-<div class="footer">© 2025 Emoji Art Studio | Powered by Simulated AI Logic</div>
-
-  </div>  <script>
+  <script>
     function getCanvasSize(platform) {
-      const map = {
+      const sizes = {
         whatsapp: 60,
         instagram: 70,
         facebook: 65,
         tiktok: 75,
         default: 64
       };
-      return map[platform] || 64;
+      return sizes[platform] || sizes.default;
     }
 
     function generateArt() {
@@ -136,89 +134,65 @@
 
       const imgData = ctx.getImageData(0, 0, size, size);
       const { data, width, height } = imgData;
-      let result = "";
+      let art = "";
 
-      function getAlpha(x, y) {
-        if (x < 0 || y < 0 || x >= width || y >= height) return 0;
-        return data[(y * width + x) * 4 + 3];
+      function alpha(x, y) {
+        return (x < 0 || y < 0 || x >= width || y >= height) ? 0 : data[(y * width + x) * 4 + 3];
       }
-      function getBrightness(x, y) {
+      function bright(x, y) {
         const i = (y * width + x) * 4;
-        const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
-        return (r + g + b) / 3;
+        return (data[i] + data[i + 1] + data[i + 2]) / 3;
       }
-      function isEdge(x, y) {
-        return [getAlpha(x + 1, y), getAlpha(x - 1, y), getAlpha(x, y + 1), getAlpha(x, y - 1)].some(n => n < 50);
+      function edge(x, y) {
+        return [alpha(x + 1, y), alpha(x - 1, y), alpha(x, y + 1), alpha(x, y - 1)].some(v => v < 50);
       }
 
       for (let y = 0; y < height; y += 2) {
         for (let x = 0; x < width; x++) {
-          const alpha = getAlpha(x, y);
-          const bright = getBrightness(x, y);
-          if (alpha < 50) {
-            result += " ";
+          const a = alpha(x, y), b = bright(x, y);
+          if (a < 50) {
+            art += " ";
             continue;
           }
-
           switch (mode) {
-            case "ai-ultra":
-              result += bright < 80 ? " " : bright > 220 ? "." : "*";
-              break;
-            case "ai-smart":
-              result += bright > 200 ? " " : bright > 130 ? "." : "*";
-              break;
-            case "ai-edge":
-              result += isEdge(x, y) ? "#" : " ";
-              break;
-            case "ai-contrast":
-              result += bright < 100 ? "*" : bright < 180 ? "+" : ".";
-              break;
-            case "ai-face":
-              result += bright > 230 ? " " : alpha < 180 ? " " : ".";
-              break;
-            case "ai-outline":
-              result += isEdge(x, y) && bright < 200 ? "#" : " ";
-              break;
-            case "ai-depth":
-              result += bright > 240 ? " " : bright > 170 ? "." : bright > 100 ? "*" : "@";
-              break;
-            case "ai-pixel":
-              result += bright > 200 ? "·" : bright > 150 ? "." : " ";
-              break;
-            case "ai-hybrid":
-              result += isEdge(x, y) ? "#" : bright > 220 ? "." : bright > 140 ? "*" : " ";
-              break;
-            case "ai-simplified":
-              result += bright > 180 ? "·" : ".";
-              break;
-            default:
-              result += ".";
+            case 'ai-ultra':      art += (b < 80 ? ' ' : '*'); break;
+            case 'ai-smart':      art += (b > 200 ? ' ' : (b > 130 ? '.' : '*')); break;
+            case 'ai-edge':       art += edge(x, y) ? '#' : ' '; break;
+            case 'ai-contrast':   art += (b < 100 ? '*' : (b < 180 ? '+' : '.')); break;
+            case 'ai-face':       art += (b > 230 || a < 180 ? ' ' : '#'); break;
+            case 'ai-outline':    art += (edge(x, y) && b < 200 ? '#' : ' '); break;
+            case 'ai-depth':      art += (b > 240 ? ' ' : (b > 170 ? '.' : (b > 100 ? '*' : '@'))); break;
+            case 'ai-pixel':      art += (b > 200 ? '·' : (b > 150 ? '.' : ' ')); break;
+            case 'ai-hybrid':     art += edge(x, y) ? '#' : (b > 220 ? '.' : (b > 140 ? '*' : ' ')); break;
+            case 'ai-simplified': art += (b > 180 ? '·' : '.'); break;
+            default:              art += '.';
           }
         }
-        result += "\n";
+        art += "\n";
       }
 
-      document.getElementById("dotOutput").textContent = result;
+      document.getElementById("dotOutput").textContent = art;
     }
 
     function copyToClipboard() {
-      const art = document.getElementById("dotOutput").textContent;
+      let text = document.getElementById("dotOutput").textContent;
       const platform = document.getElementById("platformSelect").value;
-      const formatMap = {
-        whatsapp: str => str.replace(/ /g, '\u200A'),
-        instagram: str => str.replace(/ /g, '\u00A0'),
-        facebook: str => str.replace(/ /g, '\u2003'),
-        tiktok: str => str.replace(/ /g, '\u2009'),
-        default: str => str
+      if (platform === 'whatsapp') text = '```\n' + text + '```';
+
+      const map = {
+        whatsapp: s => s.replace(/ /g, '\u00A0'),
+        instagram: s => s.replace(/ /g, '\u00A0'),
+        facebook: s => s.replace(/ /g, '\u2003'),
+        tiktok: s => s.replace(/ /g, '\u2009'),
+        default: s => s
       };
-      const formatted = (formatMap[platform] || formatMap.default)(art);
+      const formatted = (map[platform] || map.default)(text);
       navigator.clipboard.writeText(formatted).then(() => {
-        alert("✅ Copied for " + platform.toUpperCase());
-      }).catch(err => {
-        alert("❌ Copy failed: " + err);
+        alert('✅ Copied for ' + platform.toUpperCase());
       });
     }
 
     window.onload = generateArt;
-  </script></body>
+  </script>
+</body>
 </html>
