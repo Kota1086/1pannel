@@ -1,75 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Emoji Dot Art Composer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
   <style>
-    body {
-      margin: 0;
-      font-family: 'Fira Code', monospace;
-      background: linear-gradient(to bottom, #0d0d0d, #1a1a1a);
-      color: #e0ffe0;
-      display: flex;
-      justify-content: center;
-      padding: 40px 10px;
-    }
-    .app-box {
-      background: #161616;
-      border-radius: 20px;
-      box-shadow: 0 0 25px #00ffaa55;
-      padding: 30px;
-      max-width: 900px;
-      width: 100%;
-      text-align: center;
-    }
-    h1 {
-      color: #00ffcc;
-      font-size: 1.8rem;
-      margin-bottom: 20px;
-    }
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
-    input, select, button {
-      padding: 10px 15px;
-      border-radius: 8px;
-      border: none;
-      background: #222;
-      color: #0f0;
-      font-size: 1rem;
-    }
-    button {
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    button:hover {
-      background: #00ffcc;
-      color: #000;
-    }
-    .output-box {
-      background: #000;
-      border-radius: 12px;
-      padding: 20px;
-      overflow-x: auto;
-      white-space: pre;
-      font-size: 13px;
-      line-height: 1.2;
-      color: #33ff99;
-      box-shadow: inset 0 0 10px #00ff9955;
-      max-height: 70vh;
-    }
+    body { margin: 0; font-family: 'Fira Code', monospace; background: linear-gradient(to bottom, #0d0d0d, #1a1a1a); color: #e0ffe0; display: flex; justify-content: center; padding: 40px 10px; }
+    .app-box { background: #161616; border-radius: 20px; box-shadow: 0 0 25px #00ffaa55; padding: 30px; max-width: 900px; width: 100%; text-align: center; }
+    h1 { color: #00ffcc; font-size: 1.8rem; margin-bottom: 20px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px; }
+    input, select, button { padding: 10px 15px; border-radius: 8px; border: none; background: #222; color: #0f0; font-size: 1rem; }
+    button { cursor: pointer; transition: all 0.3s; }
+    button:hover { background: #00ffcc; color: #000; }
+    .output-box { background: #000; border-radius: 12px; padding: 20px; overflow-x: auto; white-space: pre; font-size: 13px; line-height: 1.2; color: #33ff99; box-shadow: inset 0 0 10px #00ff9955; max-height: 70vh; }
     canvas { display: none; }
-    .footer {
-      margin-top: 15px;
-      font-size: 12px;
-      color: #555;
-    }
+    .footer { margin-top: 15px; font-size: 12px; color: #555; }
   </style>
 </head>
 <body>
@@ -105,93 +50,52 @@
     <div class="output-box" id="dotOutput"></div>
     <div class="footer">© 2025 Emoji Art Studio | Powered by Simulated AI Logic</div>
   </div>
-
   <script>
     function getCanvasSize(platform) {
-      const sizes = {
-        whatsapp: 60,
-        instagram: 70,
-        facebook: 65,
-        tiktok: 75,
-        default: 64
-      };
+      const sizes = { whatsapp: 60, instagram: 70, facebook: 65, tiktok: 75, default: 64 };
       return sizes[platform] || sizes.default;
     }
-
     function generateArt() {
       const emoji = document.getElementById("emojiInput").value || "🥹";
       const mode = document.getElementById("modeSelect").value;
       const platform = document.getElementById("platformSelect").value;
       const size = getCanvasSize(platform);
-      const canvas = document.getElementById("emojiCanvas");
-      canvas.width = canvas.height = size;
+      const canvas = document.getElementById("emojiCanvas"); canvas.width = canvas.height = size;
       const ctx = canvas.getContext("2d");
-
       ctx.clearRect(0, 0, size, size);
       ctx.font = `${Math.floor(size * 0.8)}px serif`;
       ctx.textBaseline = "top";
       ctx.fillText(emoji, size * 0.1, size * 0.1);
-
       const imgData = ctx.getImageData(0, 0, size, size);
       const { data, width, height } = imgData;
       let art = "";
-
-      function alpha(x, y) {
-        return (x < 0 || y < 0 || x >= width || y >= height) ? 0 : data[(y * width + x) * 4 + 3];
-      }
-      function bright(x, y) {
-        const i = (y * width + x) * 4;
-        return (data[i] + data[i + 1] + data[i + 2]) / 3;
-      }
-      function edge(x, y) {
-        return [alpha(x + 1, y), alpha(x - 1, y), alpha(x, y + 1), alpha(x, y - 1)].some(v => v < 50);
-      }
-
-      for (let y = 0; y < height; y += 2) {
-        for (let x = 0; x < width; x++) {
-          const a = alpha(x, y), b = bright(x, y);
-          if (a < 50) {
-            art += " ";
-            continue;
-          }
-          switch (mode) {
-            case 'ai-ultra':      art += (b < 80 ? ' ' : '*'); break;
-            case 'ai-smart':      art += (b > 200 ? ' ' : (b > 130 ? '.' : '*')); break;
-            case 'ai-edge':       art += edge(x, y) ? '#' : ' '; break;
-            case 'ai-contrast':   art += (b < 100 ? '*' : (b < 180 ? '+' : '.')); break;
-            case 'ai-face':       art += (b > 230 || a < 180 ? ' ' : '#'); break;
-            case 'ai-outline':    art += (edge(x, y) && b < 200 ? '#' : ' '); break;
-            case 'ai-depth':      art += (b > 240 ? ' ' : (b > 170 ? '.' : (b > 100 ? '*' : '@'))); break;
-            case 'ai-pixel':      art += (b > 200 ? '·' : (b > 150 ? '.' : ' ')); break;
-            case 'ai-hybrid':     art += edge(x, y) ? '#' : (b > 220 ? '.' : (b > 140 ? '*' : ' ')); break;
-            case 'ai-simplified': art += (b > 180 ? '·' : '.'); break;
-            default:              art += '.';
-          }
-        }
-        art += "\n";
-      }
-
+      function alpha(x,y){ return (x<0||y<0||x>=width||y>=height)?0:data[(y*width+x)*4+3]; }
+      function bright(x,y){ const i=(y*width+x)*4; return (data[i]+data[i+1]+data[i+2])/3; }
+      function edge(x,y){ return [alpha(x+1,y),alpha(x-1,y),alpha(x,y+1),alpha(x,y-1)].some(v=>v<50); }
+      for(let y=0;y<height;y+=2){ for(let x=0;x<width;x++){ const a=alpha(x,y), b=bright(x,y); if(a<50){ art+=" "; continue;} switch(mode){
+            case 'ai-ultra': art += (b<80?' ':'*'); break;
+            case 'ai-smart': art += (b>200?' ': (b>130?'.':'*')); break;
+            case 'ai-edge': art += edge(x,y)?'#':' '; break;
+            case 'ai-contrast': art += (b<100?'*': (b<180?'+':'.')); break;
+            case 'ai-face': art += (b>230||a<180?' ':'#'); break;
+            case 'ai-outline': art += (edge(x,y)&&b<200?'#':' '); break;
+            case 'ai-depth': art += (b>240?' ': (b>170?'.':(b>100?'*':'@'))); break;
+            case 'ai-pixel': art += (b>200?'·':(b>150?'.':' ')); break;
+            case 'ai-hybrid': art += edge(x,y)?'#':(b>220?'.':(b>140?'*':' ')); break;
+            case 'ai-simplified': art += (b>180?'·':'.'); break;
+            default: art+='.';
+          }} art+="\n"; }
       document.getElementById("dotOutput").textContent = art;
     }
-
     function copyToClipboard() {
       let text = document.getElementById("dotOutput").textContent;
       const platform = document.getElementById("platformSelect").value;
-      if (platform === 'whatsapp') text = '```\n' + text + '```';
-
-      const map = {
-        whatsapp: s => s.replace(/ /g, '\u00A0'),
-        instagram: s => s.replace(/ /g, '\u00A0'),
-        facebook: s => s.replace(/ /g, '\u2003'),
-        tiktok: s => s.replace(/ /g, '\u2009'),
-        default: s => s
-      };
-      const formatted = (map[platform] || map.default)(text);
-      navigator.clipboard.writeText(formatted).then(() => {
-        alert('✅ Copied for ' + platform.toUpperCase());
-      });
+      // wrap in code block to preserve formatting on WhatsApp
+      if(platform==='whatsapp') text = '```' + '\n' + text + '```';
+      const map = { whatsapp: s=>s.replace(/ /g,'\u00A0'), instagram: s=>s.replace(/ /g,'\u00A0'), facebook: s=>s.replace(/ /g,'\u2003'), tiktok: s=>s.replace(/ /g,'\u2009'), default:s=>s };
+      const formatted = (map[platform]||map.default)(text);
+      navigator.clipboard.writeText(formatted).then(()=>alert('✅ Copied for '+platform.toUpperCase()));
     }
-
     window.onload = generateArt;
   </script>
 </body>
