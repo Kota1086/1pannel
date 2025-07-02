@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Emoji Dot Art Generator</title>
+    <title>WhatsApp Dot Art Generator</title>
     <style>
         * {
             margin: 0;
@@ -253,6 +253,33 @@
             opacity: 1;
         }
         
+        .preview {
+            background: rgba(20, 30, 50, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .preview h3 {
+            color: #00ccff;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .preview-box {
+            background: #f0f8ff;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            color: #333;
+            text-align: center;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
         @media (max-width: 768px) {
             h1 {
                 font-size: 2rem;
@@ -275,7 +302,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>WhatsApp Emoji Dot Art Generator</h1>
+            <h1>WhatsApp Dot Art Generator</h1>
             <p class="subtitle">Create perfect dot art that looks identical when sent through WhatsApp</p>
         </div>
         
@@ -289,18 +316,18 @@
                 <div class="control-group">
                     <label for="modeSelect" class="control-label">Art Style</label>
                     <select id="modeSelect" class="mode-select">
-                        <option value="ai-ultra">Ultra Detail</option>
-                        <option value="ai-smart">Smart Fill</option>
-                        <option value="ai-edge">Sharp Edge</option>
-                        <option value="ai-contrast">Contrast Enhance</option>
-                        <option value="ai-face">Face Map</option>
+                        <option value="standard">Standard</option>
+                        <option value="detailed">Detailed</option>
+                        <option value="contrast">High Contrast</option>
+                        <option value="light">Light Mode</option>
+                        <option value="dark">Dark Mode</option>
                     </select>
                 </div>
             </div>
             
             <div class="btn-group">
                 <button id="generateBtn" class="btn">
-                    <span>🎨 Generate Art</span>
+                    <span>🎨 Generate Dot Art</span>
                 </button>
                 <button id="copyBtn" class="btn copy">
                     <span>📋 Copy for WhatsApp</span>
@@ -310,21 +337,28 @@
             <div class="instructions">
                 <h3>How to use:</h3>
                 <ul>
-                    <li>Enter an emoji and select an art style</li>
-                    <li>Click "Generate Art" to create your dot art</li>
+                    <li>Enter an emoji in the input field</li>
+                    <li>Select an art style to change the rendering</li>
+                    <li>Click "Generate Dot Art" to create your artwork</li>
                     <li>Click "Copy for WhatsApp" to copy the optimized version</li>
                     <li>Paste directly into WhatsApp - the art will look exactly as shown</li>
-                    <li>For best results, send as a standalone message</li>
                 </ul>
             </div>
             
+            <div class="preview">
+                <h3>Preview:</h3>
+                <div class="preview-box">
+                    <pre id="previewOutput">Your dot art will appear here</pre>
+                </div>
+            </div>
+            
             <div class="output-container">
-                <pre id="dotOutput" class="dot-output">Your emoji dot art will appear here...</pre>
+                <pre id="dotOutput" class="dot-output">Your WhatsApp dot art will appear here...</pre>
             </div>
         </div>
         
         <div class="footer">
-            <p>© 2023 WhatsApp Dot Art Generator | 100% Offline & Working</p>
+            <p>© 2023 WhatsApp Dot Art Generator | Pure Dot Art Technology</p>
         </div>
     </div>
     
@@ -334,28 +368,28 @@
     </div>
 
     <script>
-        // Enhanced WhatsApp-compatible dot art generator
+        // WhatsApp-compatible dot art generator using only dots
         function getCanvasSize() {
             return 48;
         }
         
-        // Advanced character mapping for realistic results
-        const charMap = {
-            'ai-ultra': b => b < 30 ? '█' : b < 60 ? '▓' : b < 120 ? '▒' : b < 180 ? '░' : ' ',
-            'ai-smart': b => b < 40 ? '█' : b < 100 ? '▓' : b < 160 ? '▒' : b < 220 ? '░' : ' ',
-            'ai-edge': b => b < 50 ? '█' : b < 150 ? '▓' : ' ',
-            'ai-contrast': b => b < 30 ? '█' : b < 100 ? '▓' : b < 200 ? '░' : ' ',
-            'ai-face': b => b < 60 ? '█' : b < 140 ? '▓' : b < 200 ? '░' : ' '
+        // Dot rendering functions for different styles
+        const dotRenderers = {
+            'standard': (a, b) => a > 50 && b < 200 ? '.' : ' ',
+            'detailed': (a, b) => a > 30 && b < 220 ? '.' : ' ',
+            'contrast': (a, b) => a > 50 && b < 150 ? '.' : ' ',
+            'light': (a, b) => a > 50 && b < 180 ? '.' : ' ',
+            'dark': (a, b) => a > 50 && b < 100 ? '.' : ' '
         };
         
-        // WhatsApp-optimized art generation
+        // Generate dot art
         function generateArt() {
             const emoji = document.getElementById("emojiInput").value || "🥹";
             const mode = document.getElementById("modeSelect").value;
             const size = getCanvasSize();
             
             const canvas = document.createElement('canvas');
-            canvas.width = size * 2;
+            canvas.width = size * 2; // Double width for proper aspect ratio
             canvas.height = size;
             
             const ctx = canvas.getContext("2d");
@@ -369,6 +403,7 @@
             const { data, width, height } = imgData;
             
             let art = "";
+            let previewArt = "";
             
             function alpha(x, y) { 
                 if (x < 0 || y < 0 || x >= width || y >= height) return 0;
@@ -380,23 +415,24 @@
                 return (data[i] + data[i + 1] + data[i + 2]) / 3; 
             }
             
-            // Generate art with WhatsApp-specific optimizations
+            // Generate art using only dots and spaces
+            const renderer = dotRenderers[mode] || dotRenderers['standard'];
+            
             for (let y = 0; y < height; y += 1.5) {
                 for (let x = 0; x < width; x += 1) {
                     const a = alpha(x, y);
+                    const b = brightness(x, y);
+                    const char = renderer(a, b);
                     
-                    if (a < 50) {
-                        art += " ";
-                    } else {
-                        const b = brightness(x, y);
-                        const charFn = charMap[mode] || (b => b < 128 ? '*' : ' ');
-                        art += charFn(b);
-                    }
+                    art += char;
+                    previewArt += char;
                 }
                 art += "\n";
+                previewArt += "\n";
             }
             
             document.getElementById("dotOutput").textContent = art;
+            document.getElementById("previewOutput").textContent = previewArt;
         }
         
         // WhatsApp-optimized copy function
